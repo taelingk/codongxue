@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.spec.bak
+
+# Data / model outputs
+*.keras
+*.h5
+*.onnx
+*.pkl
+*.npy
+*.npz
+*.log
+training_history.csv
+test_set_infer_result.csv
+
+# Notebook
+.ipynb_checkpoints/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+Thumbs.db
+Desktop.ini
