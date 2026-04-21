@@ -38,6 +38,7 @@ The repository is organized from a previously mixed local research folder into a
 |   |-- quickstart.md
 |   `-- 项目拆解-新手导读.md
 |-- notebooks/
+|-- original_project/          # full original project snapshot
 |-- packaging/
 `-- src/
     |-- cpp/
@@ -47,6 +48,15 @@ The repository is organized from a previously mixed local research folder into a
     |-- tools/
     `-- training/
 ```
+
+## Included Versions
+
+This repository now contains two parallel forms of the project:
+
+- a cleaned, GitHub-friendly layout under `src/`, `docs/`, `data/`, and related folders
+- a full original snapshot under `original_project/`, copied from the source folder with the original structure preserved
+
+If you want the closest version to the original local project, start with `original_project/pythonProject/`.
 
 ## Recommended Entry Points
 
@@ -158,14 +168,12 @@ Included:
 - notebook
 - packaging spec
 - archived historical scripts
+- full original project snapshot in `original_project/`
 
 Not included:
 
-- trained model weights
-- exported ONNX / Keras model artifacts
-- local build folders such as `build/`, `dist/`, `output/`
-- thesis document files
 - IDE metadata
+- the nested `.git` directory from the original local project
 
 ## Known Limitations
 
@@ -174,6 +182,7 @@ Not included:
 3. Source files retain some original naming and encoding inconsistencies.
 4. The archived scripts are preserved for history, not as the recommended primary workflow.
 5. The repository has not yet been fully refactored into a reusable Python package.
+6. Large packaged artifacts in `original_project/pythonProject/build/`, `dist/`, and `output/` are tracked with Git LFS.
 
 ## Suggested Reading Order
 

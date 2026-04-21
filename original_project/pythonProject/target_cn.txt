@@ -1,0 +1,134 @@
+心震图技术在心肺功能检测中的应用
+摘要：
+心肺功能（cardiorespiratory fitness, CRF）是评估人体有氧运动能力与心血管健康的关键生命体征，对降低全因死亡风险具有重要意义。然而，心肺运动试验（cardiopulmonary exercise testing, CPET）因对专业设备和受控环境的高度依赖以及受试者高负荷风险，在大规模社区筛查和居家监测中推广受限。心震图（seismocardiography, SCG）作为一种无创机械振动监测手段，通过捕获心脏收缩—舒张周期经胸壁传导的微弱加速度信号，反映心脏电-机械耦合特征，为院外及动态环境下的心肺评估提供了可能的替代路径。近年来，SCG与机器学习（machine learning, ML）及深度学习（deep learning, DL）技术的结合，推动了该领域在静息代谢估算、动态呼吸监测及连续血流动力学量化方面取得初步但值得关注的进展。本综述系统评估了SCG在心肺功能检测中的前沿应用。在代谢与呼吸维度，现有研究表明，基于特征工程的机器学习模型和U-Net等深度网络，能够分别在非极限运动状态下估算最大摄氧量（maximal oxygen uptake, VO₂max），并在非平稳运动噪声条件下实现较高质量的呼吸信号分离；在循环维度，结合卷积神经网络（convolutional neural network, CNN）与物理动能模型，SCG在心力衰竭等结构异常群体中显示出与有创手段较高一致性的心输出量（cardiac output, CO）及每搏输出量（stroke volume, SV）监测潜力。然而，该技术仍面临严峻的瓶颈，包括不可控的运动伪影干扰、通用算法在病理重塑心脏中的特征失效、以及跨平台与跨人群的泛化能力不足。通过批判性地评估当前算法的成功与局限，本文指出SCG技术在无创心肺监测领域具有值得进一步验证的应用前景，并提出基于多模态生理信号融合的动态监测方案，以及利用迁移学习构建面向特定疾病的个体化适配模型，将是推动该技术向真实临床环境与主动健康管理转化的重要方向。
+引言
+心肺功能（cardiorespiratory fitness, CRF）是衡量心血管与呼吸系统协同向全身输送氧气能力的综合指标，美国心脏协会已将其明确列为临床生命体征，其对全因死亡的预测能力优于吸烟、高血压等经典危险因素，[1]且CRF每提升一个代谢当量（MET），全因死亡风险可降低10%–25%。[2, 3]心肺运动试验（CPET）作为公认的评价"金标准"，可在递增负荷运动中同时量化最大摄氧量（VO₂max）、通气效率和血流动力学储备，但其临床推广面临多重障碍：昂贵的气体分析设备与专业实验室构成高准入门槛；受试者须佩戴密封面罩运动至力竭，对老年人和心力衰竭患者等脆弱群体存在安全风险；且高度受控的测试环境无法反映日常活动中的真实心肺状态。这些固有局限性构成了将心肺功能评价从实验室向社区筛查和家庭监测推广的核心瓶颈。[4]
+心震图（seismocardiography, SCG）技术为突破上述瓶颈提供了新的路径。SCG通过放置于胸壁的加速度计捕捉心脏收缩-舒张周期向体表传递的微弱机械振动，这些信号蕴含瓣膜开闭、心室等容收缩与快速射血及血液喷射入大动脉时反冲力等关键力学事件的特征，直接反映心脏的电-机械耦合状态与泵血效能。[5]随着微机电系统技术的成熟，SCG传感器已实现穿戴化，甚至可利用智能手机内置惯性传感器完成采集。[6]近年来，机器学习（ML）与深度学习（DL）的引入为SCG信号分析带来了新手段：卷积神经网络（CNN）可从原始波形端到端学习特征以估算心输出量；[7]U-Net能在动态环境下分离呼吸成分与运动伪影；[8]XGBoost等集成算法用于融合多模态特征估算瞬时摄氧量。[9]这种"传感器穿戴化+算法智能化"的双重驱动，使SCG展现出同时评估代谢需求（VO₂max）、通气供给（呼吸频率与潮气量）和循环输送（心输出量与每搏输出量）三个心肺功能核心维度的潜力，为构建院外全场景心肺监测闭环提供了全新技术路径。
+本综述旨在系统梳理和批判性评估SCG技术在心肺功能检测中的现有应用进展与方法学局限。第2章概述SCG信号原理、传感器平台及核心算法；第3–5章依次涵盖代谢功能、通气功能和循环功能三个核心维度的应用；第6章综述辅助心肺参数的拓展应用；第7章批判性审视当前方法的局限性；第8章提出未来方向并作总结。
+2. SCG技术
+2.1 SCG信号的产生机制与波形形态学
+SCG信号源于心动周期中心肌收缩、瓣膜启闭和血液射入大动脉时产生的反冲力，经胸廓骨性结构传导至体表，被贴附于胸骨中下段的加速度计捕获。与ECG记录电传导不同，SCG直接反映心脏机械泵血过程，提供收缩力、瓣膜时序和血流动力学的互补信息。
+SCG波形通常以ECG R波为时间参考，在一个心动周期内可标注多个关键基准点（fiducial points），构成其独特的形态学特征体系。收缩期的核心基准点包括：等容收缩（isovolumic contraction, IVC）对应的高频振荡簇，反映心室在瓣膜关闭状态下快速建压的力学过程；主动脉瓣开放（aortic valve opening, AO）标志射血期起始，表现为背向加速度的急剧上升，其幅值与左室dp/dt_max高度相关，被广泛用作心肌收缩力的无创替代指标；[10]主动脉瓣关闭（aortic valve closure, AC）则标记射血期结束。舒张期基准点包括二尖瓣开放（mitral valve opening, MO）和快速充盈波（rapid filling, RF），反映左室松弛与顺应性。IVC–AO间期反映等容收缩时间、AO–AC间期反映左室射血时间LVET,这些基准点之间的时间间隔和振幅特征，构成了SCG心功能评估的核心参数集。[11]
+SCG具有显著的多轴特性：背腹轴（DV）捕获心室前壁运动与主动脉反冲，信噪比最高，为首选通道；头尾轴（HF）对降主动脉血流敏感；左右轴反映心脏旋转。此外，SCG与心冲击图（BCG）在测量位置、频带和基准点定义上存在本质差异，不应混用。[12]
+2.2 SCG采集方法
+SCG采集分为三大类。接触式采集最为成熟，将传感器贴附于胸壁特定位置，传感器包括：三轴MEMS加速度计，为当前主流选择；高灵敏度压电式加速度计，多用于科研场景；集成IMU，同时获取线性加速度（SCG）与旋转角速度（陀螺心图GCG），提供更完整的心脏运动图谱。设备形态包括贴片式和弹性胸带两种。[13]智能手机采集利用手机内置IMU，受试者仰卧将手机置于胸骨即可记录，零成本且可及性极高，但传感器规格不统一、手机壳衰减及放置压力变异等因素使信号质量低于专用器件。[14]非接触式采集面向烧伤、传染病或早产儿等特殊人群，包括计算机视觉、激光多普勒测振仪（LDV）、微波多普勒雷达（可穿透衣物）及空气耦合超声成像等，但总体仍处于实验室验证阶段。
+无论何种采集方式，SCG通常需与ECG同步采集，以R波作为绝对基准完成心拍分割和集成平均。如何仅依靠SCG自身实现可靠心拍分割，是近年算法研究的活跃方向。[15, 16]
+2.3 信号处理与算法
+SCG信号处理面临三个特有挑战：一是信号幅值极低，通常为毫g量级，极易被呼吸运动、体动伪影和环境振动淹没；二是波形形态在个体间存在显著差异；三是运动状态下心率加快导致收缩期与舒张期重叠，基准点检测难度急剧上升。[17-20]
+预处理流程通常包括带通滤波、基于ECG R波的心拍分割、以及运动伪影去除。自适应滤波和基于加速度计的运动参考通道是常用的去噪策略。[21-25]
+基准点检测是SCG分析的核心环节。传统方法依赖包络检测、小波变换零交叉点和基于模板匹配的逐拍对齐；近年来，深度学习方法展现出显著优势：U-Net和1D-CNN可将基准点检测建模为语义分割或回归任务，在运动环境下的检测鲁棒性较传统方法提升30%以上。隐马尔可夫模型（HMM）进一步施加时序约束，确保基准点物理顺序的合理性。[25-27]
+心肺参数估算的算法路径可分为两类：
+特征工程+传统ML路径——先提取基准点时间间隔、振幅、频域功率谱密度等手工特征，再输入随机森林、XGBoost或支持向量回归等模型进行估算；该路径可解释性强，但依赖基准点检测质量。[23, 28-31]
+端到端深度学习路径——直接将原始或最小预处理的SCG时间序列输入CNN、LSTM或Transformer网络，由模型自动学习从波形到目标参数的映射；该路径规避了基准点检测瓶颈，在大数据集上通常精度更高，但模型可解释性不足。两种路径的融合——即以深度网络提取特征、以可解释模型完成最终回归——正成为兼顾精度与临床可接受性的折中方案。
+迁移学习和域自适应技术也开始应用于SCG领域，以应对跨平台和跨人群的模型泛化问题。例如，在专用贴片上预训练的基准点检测模型，经少量标注数据微调后可迁移至智能手机平台，减少对大规模标注数据的依赖。[32]
+3. SCG在代谢功能评估中的应用
+最大摄氧量（VO₂max）体现了人体在极量运动中氧气运输、循环输送和组织利用的综合效能，是评价心肺功能核心指标，在临床上也是判定心脏康复效果、制定运动处方及评估围手术期耐受力的重要依据。[33]目前VO₂max主要依赖CPET直接测量，但该方法对设备、场地和人员要求较高，难以用于大规模筛查和长期随访。SCG虽然不能直接测量氧代谢过程，却能够记录心肌收缩、射血时序及相关机械振动特征，从而间接反映泵血效能。因此，近年来研究者开始尝试利用SCG建立对VO₂max或瞬时摄氧水平的非侵入式估算模型。[34]整体来看，现有研究已初步证明SCG可用于代谢功能评估，但不同研究在应用场景、建模策略和适用人群上差异明显，其证据更接近可行性探索，而非成熟的方法体系。
+从研究路径看，SCG代谢评估大致经历了三个递进阶段：首先是在静息状态下对健康人群进行非运动估算，其次扩展到自由活动或次极量运动条件下的动态监测，再进一步尝试向病理人群迁移。
+在静息状态下，研究重点是利用高质量的SCG信号建立VO₂max的非运动预测模型。Schmidt等及其团队面向健康人群，建立了包含数百名受试者的大型数据库，利用机器学习方法自动提取静息SCG特征，并结合人口统计学变量构建VO₂max预测模型，证明了仅依赖静息状态下的心脏机械振动即可对体能水平进行快速估算。[35]随后，Schulenburg等在94名受试者中进行了独立外部验证，结果显示该方法与CPET具有较好一致性，并具有较高重测信度，从而进一步证明了该策略在一般健康评估中的鲁棒性。[33]这类研究的意义在于，它们首次证明了SCG并非只能识别机械事件，还可以进一步映射到心肺适能这一更高层级的功能表型。不过，这一路径本质上仍是以静息循环力学特征推断整体代谢能力，其成立前提是健康个体中静息机械心脏功能与运动极限能力之间存在相对稳定的耦合关系。因此，这类模型在健康人群中表现良好，并不意味着其可自然推广到更复杂的生理或病理状态。
+在更贴近真实使用场景的研究中，SCG开始被用于自由活动和亚极量运动条件下的动态摄氧监测。Shandhi、Inan等采用可穿戴连续监测方案，在跑步机和户外步行等非完全受控活动中同步采集SCG、ECG和气压信号，并利用XGBoost等模型提取频域特征以估算瞬时摄氧量，实现了自由活动状态下能量消耗的无创连续监测。[9]与静息预测相比，这类研究更强调SCG在实际场景中的时变追踪能力，也更接近可穿戴监测的应用方向。另一方面，Hossein、Migeotte等提出了结合次极量运动与间歇性记录的预测协议：不是在持续运动过程中直接提取受伪影严重干扰的机械信号，而是在运动间隙短暂休息期记录质量更高的机械心图，并据此推算心脏动能参数以预测VO₂max。[36]这一设计在方法学上具有代表性，因为它并未简单追求全程实时监测，而是针对SCG运动态伪影严重这一固有问题，采用折中策略在信号质量和应用可行性之间寻找平衡。综合这两类研究可以看出，SCG用于动态代谢评估已不再局限于静息单点估算，而开始走向连续化和场景化；但与此同时，运动伪影、体位变化和多源噪声仍然是限制其精度与泛化能力的关键瓶颈。
+当模型进一步从健康人群迁移到病理人群时，问题变得更加突出。Hansen等发现，直接将健康人群开发的SCG模型应用于患者时会产生明显高估，因此引入部分患者数据作为训练集，并在原模型上增加年龄和疾病类型修正项，以降低估算误差。[37]这一策略在训练阶段确实显著改善了模型表现，说明病理状态下SCG波形与健康状态之间存在系统性差异，简单套用健康模型并不可行。然而，在独立验证中，该修正模型的平均绝对百分比误差仍高达29.1%，且未能检测出心力衰竭患者经过12周心脏康复后真实发生的体能改善。这一结果表明当前问题不只是样本不够或参数问题，而是现有特征提取框架本身建立在健康波形假设之上，当心衰等病理状态导致机械事件幅值、时序和形态发生重构时，原有特征体系就可能失效。
+综合现有研究，SCG对VO₂max和摄氧水平的估算能力是存在的，这一点已在健康人群静息评估和部分动态监测研究中得到验证。但是SCG在不同场景中的作用并不相同：静息状态更适合建立筛查模型，自由活动和次极量运动更接近日常应用，但也更容易受到噪声和伪影影响。同时健康模型向病理人群的迁移远比预期困难，说明SCG代谢评估不能仅依赖在健康样本上训练出的通用特征，而需要发展面向病理波形的专门建模策略。[38]
+SCG在通气功能评估中的应用
+通气功能是心肺功能评估的重要组成部分，呼吸频率、潮气量和分钟通气量与运动耐量、心衰严重程度及康复效果密切相关。传统测量多依赖呼吸感应带、肺功能仪或CPET气体分析系统，设备复杂且不利于长期居家监测。由于胸壁运动同时受心搏与呼吸调制，SCG信号天然包含呼吸信息，因此有望作为低负担、可连续的通气监测手段。[39, 40]整体而言，SCG在通气评估中的证据成熟度介于概念验证与方法确立之间：呼吸频率提取已具备较强可行性，而潮气量和心肺耦合量化仍处于早期探索阶段。
+从研究路径看，SCG通气评估大致沿三个递进层次展开：首先是从混合信号中分离呼吸节律、实现呼吸频率的准确估算；其次是进一步估算潮气量、分钟通气量等更复杂的通气参数；最后是探索呼吸对SCG心搏形态的调制效应及其心肺耦合意义。
+在呼吸频率识别方面，Naufal等人首先解决了单传感器条件下呼吸与心脏成分混叠的问题。他们提出混合变分模态分解（VMD）结合去趋势波动分析（DFA）的方法，通过分解单通道加速度信号并自动识别含呼吸信息的低频模态，实现了在去噪的同时保留呼吸波形形态，避免了传统带通滤波造成的相位偏移和失真。这项工作说明，单一传感器同时获取高保真呼吸和心跳信号是可行的。[41]
+在此基础上，Chan等人进一步关注动态环境下非平稳噪声对呼吸频率估算的干扰。他们将ECG衍生呼吸信号和SCG衍生呼吸信号转换为时频图谱，并利用U-Net区分呼吸成分与运动伪影，最终将平均绝对误差降低至0.82 bpm。这一结果表明，深度学习框架在非平稳噪声环境下可以有效分离呼吸信号，为SCG用于动态呼吸监测提供了关键的方法学支撑。[8]
+已有研究表明，通过低通滤波、包络提取、时频分析或经验模态分解等方法，可从连续SCG中较稳定地恢复呼吸节律，并在静息或低活动条件下与呼吸带或气流参考值保持较好一致。[40]这说明SCG具备在不增加额外呼吸传感器的前提下同步获取呼吸频率的能力。
+综合上述研究可以看出，SCG在呼吸频率提取方面已形成从信号分离到动态环境鲁棒估算的相对完整方法链。不过，呼吸频率之所以较易提取，很大程度上是因为其节律特征明确、目标相对单一，因此这一结果不能直接外推到更复杂的通气参数。正因如此，当研究者尝试进一步估算潮气量和分钟通气量时，难度显著上升。
+在此基础上，部分研究进一步尝试估算潮气量、分钟通气量及呼吸努力程度。与呼吸频率相比，这类任务难度更高，因为潮气量不仅受呼吸周期影响，还与胸廓运动幅度、体位、呼吸方式及传感器耦合状态密切相关。现有方法通常将SCG与ECG、呼吸带、体动信号或其他惯性数据联合建模，通过特征工程或机器学习方法进行回归估算。综合已有结果可以看出，SCG在这类任务中能够提供有价值的辅助信息，但单独作为唯一输入时稳定性仍有限。[42]这提示SCG在通气评估中的现实优势，更可能体现在多模态融合框架中，而不是独立替代传统呼吸测量技术。换言之，SCG的价值不在于“单独最准确”，而在于它能在本就采集胸壁机械信号的基础上，附加提供呼吸维度信息。
+另一个值得关注的方向是呼吸对SCG心搏形态的调制及其心肺耦合意义。部分研究发现，吸呼过程中SCG振幅、基准点时序和波形形态存在系统性波动，这些变化与胸腔压力摆动、回心血量变化和自主神经调节相关。[43]此类研究的意义在于：一方面，它有助于解释不同呼吸相位下SCG特征为何发生变化，从而为更稳定的基准点检测和参数估算提供依据；[44]另一方面，它提示SCG不仅能够“提取呼吸”，还可能反映通气与循环之间的耦合状态，这对于心衰、睡眠呼吸障碍等疾病场景具有潜在价值。[40, 45, 46]不过，目前这方面仍以方法探索和机制分析为主，距离形成稳定临床指标尚有距离。
+尽管SCG在通气功能评估中展现出良好前景，但其局限也较突出。首先，心呼成分分离困难是核心技术问题。呼吸既是目标信号，也是干扰源：低频呼吸成分有助于识别节律，却也会改变心搏基线和局部形态，影响AO、AC等特征点检测。[47]其次，通气参数对体位和传感器位置高度敏感，尤其是潮气量和分钟通气量，更容易受到胸壁耦合状态变化的影响。再次，在自由活动环境中，体动噪声与呼吸低频成分频带重叠，使动态监测精度明显下降。[48]因此，现有文献虽然普遍支持SCG可用于呼吸监测，但这种“可用”主要建立在静息或低活动条件下；若要真正实现居家长期应用，仍需在信号分离、个体校准和跨场景泛化方面进一步突破。[30]
+总体而言，SCG在通气功能评估中的研究已显示出比单纯心脏机械事件检测更丰富的应用边界。现阶段较明确的共识是：SCG在呼吸频率监测方面已有较强可行性，而在潮气量、分钟通气量及心肺耦合量化方面仍处于探索阶段。其真正潜力不在于简单替代呼吸带，而在于凭借同一传感器同时提供心脏与呼吸信息，为低负担、连续化的心肺监测提供整合式方案。
+SCG在循环功能评估中的应用
+循环功能是心肺功能评估的核心环节，其关键在于心脏能否将足够血流输送至外周组织以满足代谢需求。心输出量（CO）和每搏输出量（SV）是最直接的量化指标，也是判断泵血功能、容量状态及运动耐量变化的重要依据。[36, 49]然而，传统CO和SV测量多依赖右心导管（RHC）、超声心动图或心脏磁共振（CMR）等有创或高成本手段，难以用于连续监测和院外评估。因此，近年来研究开始探索利用SCG对CO和SV进行无创估算，以期为心肺监测提供低负担的循环功能窗口。[50]
+现有研究大体形成两条主要路径：一类是端到端深度学习模型，直接从原始波形中学习与泵血功能相关的隐含特征；[51]另一类是基于射血时间、振幅或动能等参数构建的生理特征模型，强调可解释性。[46]与此同时，为提高复杂场景下的鲁棒性，还出现了将SCG与ECG联合建模的多模态融合方法。这表明SCG对循环功能的价值，已从单纯的心动周期事件识别扩展到功能定量评估。[7, 52]
+在CO估算方面，Wang等人为突破CO测量对有创导管和专业影像设备的依赖，提出了结合三轴SCG、ECG及BMI数据的卷积神经网络模型。研究基于73名心力衰竭患者的RHC同步数据，通过端到端学习直接从原始波形估算CO。在参考CO < 6 L/min的高危亚组中，该模型平均偏差仅−0.01 L/min，显示出极高一致性。[7]这一结果说明，深度学习可在病理状态下捕捉传统人工特征难以表征的异常机械模式，为低心排量患者的无创评估提供了新路径。对心肺监测而言，准确的CO估算可帮助医生在患者运动耐量下降时判断其是否存在变时性无能或泵血衰竭，从而指导康复训练强度。
+深度学习模型虽然在预测精度上表现突出，但其“黑箱”特性限制了临床可信度，这促使另一些研究者转向更具生理透明度的建模路径。Ganti等人聚焦于先天性心脏病（CHD）患者，针对这类患者常需依赖昂贵CMR评估SV的现状，他们提取SCG中的AO和AC点，计算收缩前期（PEP）和左室射血时间（LVET），并结合ECG特征通过岭回归估算SV。结果显示，融合ECG与SCG特征的模型明显优于单模态模型，SV估算的RMSE为11.48 mL，误差率为28%。[53]这说明，在解剖和血流动力学均异常的特殊人群中，SCG所提供的射血时序信息仍与金标准CMR保持较强相关性。其意义在于，SV的连续估算可进一步反映呼吸运动对心脏充盈和搏出量的影响，从而帮助评估容量状态和流体反应性。
+无论是端到端深度学习还是基于射血时序的生理模型，在相对稳定的测量条件下都展现了一定精度。然而，当监测场景从静息或仰卧扩展到围术期或体位快速变化等血流动力学剧烈波动状态时，单一模态信号的鲁棒性明显下降。Semiz等人正是针对这一瓶颈，开发了基于随机森林的SCG-ECG融合模型，从两种信号中提取时域及频域特征用于SV估算，相关系数达到r=0.81。[46]这一结果表明，在血流动力学不稳定状态下，电—机械融合模型较单纯机械或电学模型更具适应性。也就是说，SCG在动态循环监测中的价值，往往体现在多模态框架中提供关键机械信息，而非必须作为独立信号源存在。
+上述三类研究——无论是端到端深度学习、生理时序特征还是多模态融合——都在不同程度上依赖于对个别基准点或特定波形片段的识别。当病理状态导致AO、AC等关键点难以可靠检测时，这些方法都面临特征退化的风险。Hossein和Migeotte团队从物理学视角提出了一种规避这一瓶颈的替代策略：基于牛顿力学计算心脏线性与旋转动能（iK）。他们通过积分SCG和GCG信号，量化心脏在收缩期和舒张期的总动能，并发现该指标与SV及CO均显著正相关。[14]这一方法避免了对单个特征点的过度依赖，在病理波形畸变或AO、AC难以识别时仍具有潜在优势。更重要的是，iK可能反映心脏为克服呼吸引起胸内压变化所做的额外机械功，因此有望更灵敏地揭示心衰患者在呼吸困难状态下的心肺储备消耗。[54]
+总体来看，现有研究表明SCG在CO和SV估算方面具有明确潜力。不过，这一方向仍面临样本量有限、参考标准不统一及信号易受体位、贴合和运动伪影影响等问题。因此，现阶段SCG更适合作为标准方法的补充工具或多模态监测框架中的关键机械信息源，而非其完全替代方案。
+SCG在辅助心肺参数评估中的拓展应用
+除代谢、通气和循环三大核心维度外，心肺功能评测还依赖辅助参数，包括心脏收缩时间间隔、血压及血流动力学负荷、肺毛细血管楔压（PCWP）、心率变异性和自主神经调节等[40]这些指标虽不等同于VO₂max、通气量或CO，但可从心肌收缩、充盈压力、后负荷和调节状态等层面补充心肺功能评估。SCG的意义在于通过单一机械信号构建多层次生理表型，而非仅测单一参数。[50]整体而言，辅助参数评估的研究成熟度参差不齐，其中收缩时间间隔的提取最为成熟，而血压趋势和容量状态监测仍处于可行性验证阶段。
+现有研究表明，SCG在辅助参数评估中的应用主要集中在两类方向：一类围绕心脏机械时序和收缩力指标，另一类则关注血流动力学状态和系统调节特征[55, 56]
+在机械时序方面，SCG可提取PEP、LVET等收缩间隔，AO、AC等关键基准点对应主动脉瓣开闭，天然适合表征射血起止。[57]Lin等人针对射血分数降低的心力衰竭（HFrEF）筛查这一临床痛点，提出利用动态时间规整（DTW）技术辅助SCG信号与超声模板对齐，从而在病理状态下因心率变异和波形畸变导致特征点难以定位时，仍能较稳定地提取PEP/LVET比值和Tei指数，用于社区环境下的快速心功能分层。[58]这一方法的意义在于：它针对病理波形的特殊挑战提供了模板引导的解决方案，使得SCG时间间隔参数在缺乏专业超声设备的基层场景中具有实用潜力。不过，DTW模板本身需要超声数据辅助建立，这在一定程度上削弱了SCG作为独立评估工具的便捷性，如何实现模板的自适应更新仍是待解决的问题。PEP延长通常提示收缩功能下降或后负荷增加，LVET缩短则表明射血效率下降，即使无法稳定估算绝对CO或SV，SCG也可跟踪功能变化趋势，为功能退化的早期识别提供线索。[59]
+在血流动力学与容量评估中，一个重要进展来自连续无袖带血压监测。Kim、Inan等人利用SCG的AO点作为近端计时参考，替代传统ECG-PAT方法中包含射血前期（PEP）误差的起始时刻，构建了基于SCG-PTT（脉搏传导时间）的血压估算模型。[60-63]这一改进的关键在于：传统ECG R波到外周脉搏波的时间延迟包含了电-机械延迟（即PEP），而PEP本身受心肌收缩状态影响会独立变化，从而引入与血压无关的噪声。SCG的AO点直接标记机械射血起始，在物理上更准确地定义了脉搏波传播的起点，理论上可提高血压估算的保真度。不过，AO点的准确检测在运动或体位变化状态下仍是挑战，这限制了该方法在自由活动场景中的实际精度。
+另一个值得关注的方向是PCWP的无创追踪。Shandhi等人发现SCG舒张晚期波形形态随心脏充盈压呈规律性变化，提示SCG可在一定程度上反映肺淤血状态及容量波动。[55]这对于心衰患者的居家监测尤为重要：充盈压升高往往先于症状出现，若能通过胸壁机械信号捕捉这一趋势，有望实现失代偿的早期预警。然而，目前该方向仍停留在可行性探索阶段，样本量小且缺乏纵向验证，距离形成可靠的临床预警指标仍有距离。
+SCG还可通过心率变异性、搏动一致性及呼吸耦合特征评估自主神经调节状态。Khodabakhshi、Tadi等人利用变分模态分解（VMD）增强SCG信号以精确定位AO峰值，从而提取逐搏间隔用于HRV分析。[64]这类指标能揭示交感-副交感平衡及疲劳、应激或恢复过程中的调节变化，为运动后恢复监测和心血管风险分层提供补充信息。不过，SCG衍生的HRV指标与ECG衍生指标之间的一致性尚需更系统的验证，尤其在心率快速变化的运动场景中。
+总体来看，这些辅助参数不作为独立终点，而是服务于三大核心维度的增强解释：机械时序参数揭示循环功能的内部机制，血压和容量指标有助于解释运动耐量下降或呼吸困难的血流动力学原因，自主调节特征则为康复进程和风险分层提供补充信息。当前，收缩时间间隔的提取已具备较强方法基础，而血压趋势、PCWP追踪和自主神经量化仍需更大规模的验证研究。SCG在辅助参数领域的真正潜力，在于通过统一的机械信号平台整合原本分散于多种设备的生理信息，从“测单一信号”走向“刻画多层次心肺表型”——但这一愿景的实现，有赖于参数标准化、机制验证和多模态融合的协同推进。
+SCG方法局限与挑战
+尽管SCG在心肺功能评估中展现出多维潜力，但从实验室验证到真实应用仍面临多重瓶颈。本章围绕三个核心矛盾展开讨论。
+SCG在心肺功能三大维度中的技术成熟度概览
+展示了心震图（SCG）技术在心肺功能三个核心维度上的技术成熟度评估。五个轴分别表示关键评价维度：信号采集可行性（Signal Acquisition）、算法验证程度（Algorithm Validation）、临床验证规模（Clinical Scale）、跨人群泛化能力（Generalization Capability）和实际应用就绪度（Application Readiness）。图中蓝色区域表示代谢功能（VO₂max），绿色表示通气功能（RR），橙色表示循环功能（CO/SV）。图中数值1–3分别对应“初步探索（Preliminary）”、“方法验证（Validated）”和“临床就绪（Clinical-Ready）”。从图中可以看出，三类功能在信号采集和算法验证上已达到方法验证水平，而在临床验证、跨人群泛化及应用就绪度方面仍处于初步探索阶段，尤其是循环功能的泛化能力和应用就绪度较低，提示SCG技术在向实际临床和多人群推广中仍存在挑战。
+第一个核心矛盾是信号脆弱性与真实场景复杂性之间的矛盾。SCG信号幅值极低，对体位、传感器贴合方式、呼吸运动和肢体活动高度敏感，在自由活动状态下信噪比急剧下降。更关键的是，现有多数算法在健康人群训练的特征体系在心衰、瓣膜疾病或先天性心脏异常患者中常常失效。
+针对这一局限，多模态融合与病理专用建模是两个互补的突破方向。将SCG与ECG、PPG、呼吸信号及运动传感器联合使用，可利用信号间的冗余和互补缓解单模态对伪影的敏感性，这一点在第5章Semiz等人的电-机械融合研究中已初见成效。与此同时，发展面向特定病理状的专用模型，而非追求通用算法的跨人群覆盖，可能是更务实的临床转化路径——迁移学习和少样本微调技术为此提供了可行的算法框架。
+第二个核心矛盾是算法精度与临床可解释性之间的平衡。传统特征工程方法依赖人工提取时间间隔、振幅和频域特征，对基准点识别精度高度敏感。端到端深度学习模型虽可在大数据集上提高预测精度、规避基准点检测瓶颈，但其“黑箱”特性使临床医生难以判断模型究竟是在利用心脏机械事件还是在拟合替代信号中的混淆变量，这直接影响了SCG算法在临床决策中的可信度和可接受性。
+一条可行路径是“深度特征提取+可解释回归”的混合架构——由CNN或Transformer自动学习波形表示，再由注意力可视化等手段揭示关键特征的生理对应，从而兼顾精度与透明度。Hossein等人的物理动能（iK）方法则代表了另一条路径：从牛顿力学出发构建指标，天然具备生理可解释性，同时规避了对单个基准点的依赖。
+第三个核心矛盾是研究碎片化与标准化需求之间的矛盾。SCG领域至今缺乏统一的信号处理流程、基准点命名规范和评价指标体系，不同研究采用不同的滤波频段、分割策略和性能度量，导致结果难以横向比较。传感器类型和佩戴位置的差异进一步加剧了跨平台泛化的困难。此外，多数辅助参数的临床增益尚未经过多中心、大样本的系统验证，其在真实临床决策中的实际价值仍是悬而未决的问题。
+标准化和跨平台泛化的推进需要社区层面的协调努力。建立开放的SCG基准数据集是第一步；在此基础上，统一基准点定义和预处理流程、发展面向不同采集条件的迁移学习策略，将为模型在多场景中的可复现部署奠定基础。只有通过大样本、多人群、多中心的前瞻性临床验证，才能评估SCG在真实场景下的可靠性和临床增益。
+此外，长期连续监测与居家应用是SCG技术落地的核心方向。若能解决上述三个核心矛盾，SCG有望实现低负担、连续采集，为心衰管理中的早期失代偿预警、运动康复中的负荷实时调控、以及社区筛查中的多维心肺表型快速刻画提供全新的技术路径。
+综上所述，SCG正从单一机械事件检测向多维心肺功能表型拓展。它不仅可提供VO₂max、通气量和CO的无创估算，还可通过辅助参数反映心脏收缩效率、血流动力学状态和自主调节能力。当前，该技术在信号脆弱性与场景复杂性、算法精度与临床可解释性、研究碎片化与标准化需求三个维度上均面临实质性挑战。但正是这些挑战，也清晰地勾勒出了未来的突破路径：多模态融合缓解信号脆弱性、混合架构平衡精度与可解释性、社区协作推进标准化和大规模验证。若能沿这些方向取得协同进展，SCG有望发展为低负担、连续化、可居家应用的全面心肺监测平台，为个体化心肺健康管理和风险分层提供重要工具。
+References
+[1]	ROSS R, BLAIR S N, ARENA R, et al. Importance of Assessing Cardiorespiratory Fitness in Clinical Practice: A Case for Fitness as a Clinical Vital Sign: A Scientific Statement From the American Heart Association [J]. Circulation, 2016, 134(24).
+[2]	SCHULENBURG R, SCHMIDT S E, SCHRÖDER J, et al. Evaluating Seismocardiography as a Non-Exercise Method for Estimating Maximal Oxygen Uptake [J]. Healthcare, 2024, 12(21): 2162.
+[3]	ZHOU F, WANG W, NIE Y, et al. The study of the association between exercise motivation and cardiorespiratory fitness in young students: a systematic review and meta-analysis [J]. Front. Psychol., 2025, 16.
+[4]	DORES H, MENDES M, ABREU A, et al. Cardiopulmonary exercise testing in clinical practice: Principles, applications, and basic interpretation [J]. Revista portuguesa de cardiologia : orgao oficial da Sociedade Portuguesa de Cardiologia = Portuguese journal of cardiology : an official journal of the Portuguese Society of Cardiology, 2024, 43(9): 525-36.
+[5]	INAN O T, MIGEOTTE P, PARK K, et al. Ballistocardiography and seismocardiography: a review of recent advances [J]. IEEE J. Biomed. Health Inform., 2015, 19(4): 1414-27.
+[6]	Di RIENZO M, VAINI E, CASTIGLIONI P, et al. Wearable seismocardiography: towards a beat-by-beat assessment of cardiac mechanics in ambulant subjects [J]. Autonomic neuroscience : basic & clinical, 2013, 178(1-2): 50-9.
+[7]	WANG J, NOURAIE S M, KELLY N J, et al. Deep learning predicts cardiac output from seismocardiographic signals in heart failure [J]. The American Journal of Cardiology, 2025.
+[8]	CHAN M, GANTI V G, INAN O T. Respiratory Rate Estimation Using U-Net-Based Cascaded Framework From Electrocardiogram and Seismocardiogram Signals [J]. IEEE J. Biomed. Health Inform., 2022, 26(6): 2481-92.
+[9]	SHANDHI M M H, BARTLETT W H, HELLER J A, et al. Estimation of Instantaneous Oxygen Uptake During Exercise and Daily Activities Using a Wearable Cardio-Electromechanical and Environmental Sensor [J]. IEEE J. Biomed. Health Inform., 2021, 25(3): 634-46.
+[10]	SIECIŃSKI S, KOSTKA P S, TKACZ E J. Heart Rate Variability Analysis on Electrocardiograms, Seismocardiograms and Gyrocardiograms on Healthy Volunteers [J]. Sensors (Basel, Switzerland), 2020, 20(16): 4522.
+[11]	P. Y H, P. H H, H. L L. Exploring Seismocardiogram Biometrics with Wavelet Transform; proceedings of the*2020 25th International Conference on Pattern Recognition (ICPR), 2021/1/1, 2021 [C], 2021.
+[12]	HAN X, WU X, WANG J, et al. The Latest Progress and Development Trend in the Research of Ballistocardiography ( BCG ) and Seismocardiogram ( SCG ) in the Field of Health Care [J]. Appl. Sci.-Basel, 2021, 11(19): 17.
+[13]	SIECIŃSKI S, TKACZ E J, KOSTKA P S. Heart Rate Variability Analysis on Electrocardiograms, Seismocardiograms and Gyrocardiograms of Healthy Volunteers and Patients with Valvular Heart Diseases [J]. Sensors (Basel, Switzerland), 2023, 23(4): 2152.
+[14]	HOSSEIN A, ABDESSATER E, BALALI P, et al. Smartphone-Derived Seismocardiography: Robust Approach for Accurate Cardiac Energy Assessment in Patients with Various Cardiovascular Conditions [J]. Sensors, 2024, 24(7): 2139.
+[15]	PARLATO S, CENTRACCHIO J, ESPOSITO D, et al. ECG-Free Heartbeat Detection in Seismocardiography and Gyrocardiography Signals Provides Acceptable Heart Rate Variability Indices in Healthy and Pathological Subjects [J]. Sensors (Basel, Switzerland), 2023, 23(19): 8114.
+[16]	SIECINSKI S, TKACZ E J, KOSTKA P S. Comparison of HRV indices obtained from ECG and SCG signals from CEBS database [J]. Biomed. Eng. Online, 2019, 18(1): 69.
+[17]	JAFARI TADI M, LEHTONEN E, HURNANEN T, et al. A real-time approach for heart rate monitoring using a Hilbert transform in seismocardiograms [J]. Physiol. Meas., 2016, 37(11): 1885-909.
+[18]	C. Y, N. T. Motion Artifact Cancellation of Seismocardiographic Recording From Moving Subjects [J]. IEEE Sens. J., 2016, 16(14): 5702-8.
+[19]	MALCANGI M, QUAN H, VAINI E, et al. Applying the EFuNN Evolving Paradigm to the Recognition of Artefactual Beats in Continuous Seismocardiogram Recordings; proceedings of the*, Cham, 2017/1/1, 2017 [C]. Springer International Publishing: Cham, 2017.
+[20]	C. Y, N. T. Motion noise cancellation in seismocardiogram of ambulant subjects with dual sensors; proceedings of the*2016 38th Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC), 2016/1/1, 2016 [C], 2016.
+[21]	C. Y, S. T, N. T. Utilizing Gyroscopes Towards the Automatic Annotation of Seismocardiograms [J]. IEEE Sens. J., 2017, 17(7): 2129-36.
+[22]	C. Y, N. T. Combined Seismo- and Gyro-Cardiography: A More Comprehensive Evaluation of Heart-Induced Chest Vibrations [J]. IEEE J. Biomed. Health Inform., 2018, 22(5): 1466-75.
+[23]	H. A, O. T I. Automatic Detection of Seismocardiogram Sensor Misplacement for Robust Pre-Ejection Period Estimation in Unsupervised Settings [J]. IEEE Sens. J., 2017, 17(12): 3805-13.
+[24]	LANDREANI F, MARTIN-YEBRA A, CASELLATO C, et al. Beat-to-beat heart rate detection by smartphone's accelerometers: validation with ECG [J]. Annual International Conference of the IEEE Engineering in Medicine and Biology Society. IEEE Engineering in Medicine and Biology Society. Annual International Conference, 2016, 2016: 525-8.
+[25]	WAHLSTROM J, SKOG I, HANDEL P, et al. A Hidden Markov Model for Seismocardiography [J]. IEEE transactions on bio-medical engineering, 2017, 64(10): 2361-72.
+[26]	P. K J, A. K T. An algorithm for automatic segmentation of heart sound signal acquired using seismocardiography; proceedings of the*2016 International Conference on Systems in Medicine and Biology (ICSMB), 0004/7/20, 2016 [C], 2016.
+[27]	TAEBI A, MANSY H A. Time-Frequency Distribution of Seismocardiographic Signals: A Comparative Study [J]. Bioengineering (Basel, Switzerland), 2017, 4(2): 32.
+[28]	B. E S, A. T, H. A M. Classification of seismocardiographic cycles into lung volume phases; proceedings of the*2017 IEEE Signal Processing in Medicine and Biology Symposium (SPMB), 0002/2/20, 2017 [C], 2017.
+[29]	A. T, B. E S, H. A M. An Adaptive Feature Extraction Algorithm for Classification of Seismocardiographic Signals; proceedings of the*SoutheastCon 2018, 2018/1/1, 2018 [C], 2018.
+[30]	V. Z, A. A, N. A, et al. Analyzing Seismocardiogram Cycles to Identify the Respiratory Phases [J]. IEEE. Trans. Biomed. Eng., 2017, 64(8): 1786-92.
+[31]	V. Z, K. T. Identification of respiratory phases using seismocardiogram: A machine learning approach; proceedings of the*2015 Computing in Cardiology Conference (CinC), 0006/9/20, 2015 [C], 2015.
+[32]	SIECIŃSKI S, KOSTKA P. Determining Heart Rate Beat-to-Beat from Smartphone Seismocardiograms: Preliminary Studies; proceedings of the*, Cham, 2018/1/1, 2018 [C]. Springer International Publishing: Cham, 2018.
+[33]	SCHULENBURG R, SCHMIDT S E, SCHRÖDER J, et al. Evaluating Seismocardiography as a Non-Exercise Method for Estimating Maximal Oxygen Uptake [J]. Healthcare (Basel, Switzerland), 2024, 12(21): 2162.
+[34]	SØRENSEN K, POULSEN M K, KARBING D S, et al. A Clinical Method for Estimation of VO2max Using Seismocardiography [J]. Int. J. Sports. Med., 2020, 41(10): 661-8.
+[35]	SCHMIDT S E, HANSEN M T, KARBING D S, et al. Estimation of cardiorespiratory fitness in healthy using seismocardiography [J]. npj Cardiovascular Health, 2025, 2(1).
+[36]	HOSSEIN A, RABINEAU J, QUESTEL P, et al. Estimating V̇O2 max in healthy subjects without maximal effort: a novel protocol using ballistocardiography [J]. Front. Sports Act. Living, 2026, 7.
+[37]	HANSEN M T, HASHIBA M, NIELSEN S K, et al. Non-exercise estimation of peak oxygen uptake in patients with ischaemic heart disease and heart failure using seismocardiography [J]. European heart journal. Digital health, 2025, 7(1): ztaf95.
+[38]	ZHANPENG F, YAN J, FENGRONG Z, et al. Estimation of peak oxygen pulse from body mass, resting heart rate, age, gender and systolic blood pressure in Chinese adults aged 20-39 [J]. Heliyon, 2023, 9(11): e21912.
+[39]	SHARMA P, HUI X, ZHOU J, et al. Wearable radio-frequency sensing of respiratory rate, respiratory volume, and heart rate [J]. NPJ Digit. Med., 2020, 3: 98.
+[40]	KIZIR B, SEMIZ B. A Hierarchical Framework for Apnea Detection and Respiration Pace Assessment Using Seismocardiogram Signals [J]. Proceedings of the 17th International Joint Conference on Biomedical Engineering Systems and Technologies, 2024.
+[41]	NAUFAL D, PRAMUDYO M, RAJAB T L E, et al. The evaluation of seismocardiogram signal pre-processing using hybridized variational mode decomposition method [J]. Biomed. Eng. Lett., 2022, 12(4): 381-92.
+[42]	SOLIMAN M M, GANTI V G, INAN O T. Toward Wearable Estimation of Tidal Volume via Electrocardiogram and Seismocardiogram Signals [J]. IEEE Sens. J., 2022, 22(18): 18093-103.
+[43]	CLAIRMONTE N, SKORIC J, D'MELLO Y, et al. Neural Network-based Classification of Static Lung Volume States using Vibrational Cardiography() [J]. Annual International Conference of the IEEE Engineering in Medicine and Biology Society. IEEE Engineering in Medicine and Biology Society. Annual International Conference, 2020, 2020: 221-4.
+[44]	IMIRZALIOGLU M, SEMIZ B. Quantifying Respiration Effects on Cardiac Vibrations using Teager Energy Operator and Gradient Boosted Trees [J]. Annual International Conference of the IEEE Engineering in Medicine and Biology Society. IEEE Engineering in Medicine and Biology Society. Annual International Conference, 2022, 2022: 1935-8.
+[45]	YANG C, ARANOFF N D, GREEN P, et al. Classification of Aortic Stenosis Using Time-Frequency Features From Chest Cardio-Mechanical Signals [J]. IEEE transactions on bio-medical engineering, 2020, 67(6): 1672-83.
+[46]	SEMIZ B, CAREK A M, JOHNSON J C, et al. Non-Invasive Wearable Patch Utilizing Seismocardiography for Peri-Operative Use in Surgical Patients [J]. IEEE J. Biomed. Health Inform., 2021, 25(5): 1572-82.
+[47]	SHANDHI M M H, SEMIZ B, HERSEK S, et al. Performance Analysis of Gyroscope and Accelerometer Sensors for Seismocardiography-Based Wearable Pre-Ejection Period Estimation [J]. IEEE J. Biomed. Health Inform., 2019, 23(6): 2365-74.
+[48]	A. T, H. A M. Grouping similar seismocardiographic signals using respiratory information; proceedings of the*2017 IEEE Signal Processing in Medicine and Biology Symposium (SPMB), 0002/2/20, 2017 [C], 2017.
+[49]	KLEM I, SHAH D J, WHITE R D, et al. Prognostic value of routine cardiac magnetic resonance assessment of left ventricular ejection fraction and myocardial damage: an international, multicenter study [J]. Circulation. Cardiovascular imaging, 2011, 4(6): 610-9.
+[50]	ETEMADI M, INAN O T. Wearable ballistocardiogram and seismocardiogram systems for health and performance [J]. Journal of applied physiology (Bethesda, Md. : 1985), 2018, 124(2): 452-61.
+[51]	De KEYZER E, HOSSEIN A, RABINEAU J, et al. Non-invasive cardiac kinetic energy distribution: a new marker of heart failure with impaired ejection fraction (KINO-HF) [J]. Front. Cardiovasc. Med., 2023, 10.
+[52]	HERKERT C, MIGEOTTE P, HOSSEIN A, et al. The kinocardiograph for assessment of changes in haemodynamic load in patients with chronic heart failure with reduced ejection fraction [J]. ESC Heart Fail., 2021, 8(6): 4925-32.
+[53]	GANTI V G, GAZI A H, AN S, et al. Wearable Seismocardiography‐Based Assessment of Stroke Volume in Congenital Heart Disease [J]. J. Am. Heart Assoc., 2022, 11(18): e26067.
+[54]	MORRA S, PITISCI L, SU F, et al. Quantification of Cardiac Kinetic Energy and Its Changes During Transmural Myocardial Infarction Assessed by Multi-Dimensional Seismocardiography [J]. Front. Cardiovasc. Med., 2021, 8.
+[55]	SHANDHI M M H, FAN J, HELLER J A, et al. Estimation of Changes in Intracardiac Hemodynamics Using Wearable Seismocardiography and Machine Learning in Patients With Heart Failure: A Feasibility Study [J]. IEEE. Trans. Biomed. Eng., 2022, 69(8): 2443-55.
+[56]	NEILL L, ETEMADI M, KLEIN L, et al. Novel Noninvasive Biosensors and Artificial Intelligence for Optimized Heart Failure Management [J]. JACC: Basic to Translational Science, 2022, 7(3): 316-8.
+[57]	HANSEN M T, RØMER T, HØJGAARD A, et al. Validity and reliability of seismocardiography for the estimation of cardiorespiratory fitness [J]. Cardiovascular digital health journal, 2023, 4(5): 155-63.
+[58]	LIN W, TSAI T, LEE M, et al. Identification of Location Specific Feature Points in a Cardiac Cycle Using a Novel Seismocardiogram Spectrum System [J]. IEEE J. Biomed. Health Inform., 2018, 22(2): 442-9.
+[59]	MA M, GAUVREAU K, ALLAN C K, et al. Causes of death after congenital heart surgery [J]. The Annals of thoracic surgery, 2007, 83(4): 1438-45.
+[60]	HAN X, ZHONG K, WANG J, et al. Study on the effect of the ballistocardiography-based “Internet + Smart Bed” health management system on the quality of life of elderly users with chronic diseases [J]. Ann. Transl. Med., 2022, 10(6): 363.
+[61]	JAVAID A Q, ASHOURI H, DORIER A, et al. Quantifying and Reducing Motion Artifacts in Wearable Seismocardiogram Measurements During Walking to Assess Left Ventricular Health [J]. IEEE. Trans. Biomed. Eng., 2017, 64(6): 1277-86.
+[62]	PIZARRO C S, SCHOTS B B S, SCHUURING M J, et al. Non-Invasive Remote Monitoring in Heart Failure: Towards Wearable Devices and Artificial Intelligence Solutions [J]. Curr. Heart Fail. Rep., 2025, 22(1).
+[63]	MACE M I, LALA A, FENDLER T J, et al. Emerging use of pulmonary artery and cardiac pressure sensing technology in the management of worsening heart failure events [J]. Heart Fail. Rev., 2025.
+[64]	INAN O T, POUYAN M B, JAVAID A Q, et al. Novel Wearable Seismocardiography and Machine Learning Algorithms Can Assess Clinical Status of Heart Failure Patients [J]. Circulation: Heart Failure, 2018, 11(1).

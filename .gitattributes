@@ -1,0 +1,4 @@
+original_project/pythonProject/build/** filter=lfs diff=lfs merge=lfs -text
+original_project/pythonProject/dist/** filter=lfs diff=lfs merge=lfs -text
+original_project/pythonProject/output/** filter=lfs diff=lfs merge=lfs -text
+original_project/pythonProject/*.docx filter=lfs diff=lfs merge=lfs -text
