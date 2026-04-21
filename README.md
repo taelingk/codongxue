@@ -1,31 +1,19 @@
-# SVCO Cardiac Output Estimation
+# SVCO Cardiac Output Estimation Project
 
-A cleaned and GitHub-ready packaging of the original research codebase for estimating stroke volume (`SV`) and cardiac output (`CO`) from pulse-wave / PPG-like signals.
+This repository is a cleaned GitHub-ready package of the codebase from `D:\乱七八糟\董雪毕设\pythonProject`.
 
-## Overview
+## Project Summary
 
-This project contains an end-to-end experimental workflow:
+The project focuses on stroke volume (`SV`) and cardiac output (`CO`) estimation from pulse-wave / PPG-like signals. The codebase contains:
 
-1. preprocess raw pulse-wave signals
-2. detect valleys and generate fixed-length slices
-3. combine waveform features with clinical features
-4. train a TensorFlow model for `SV` prediction
-5. export the trained model to ONNX
-6. run ONNX inference and visualize results in a PyQt5 desktop GUI
+- signal preprocessing scripts
+- slice generation and structured dataset preparation
+- TensorFlow training code with ONNX export
+- ONNX inference code
+- a PyQt5 desktop monitoring interface
+- experimental notebook and older archived scripts
 
-The repository is organized from a previously mixed local research folder into a more standard source layout suitable for GitHub sharing.
-
-## Features
-
-- signal preprocessing for raw CSV waveform data
-- valley detection and slice generation
-- model training with TensorFlow / Keras
-- ONNX export and ONNX Runtime inference
-- PyQt5 monitoring interface
-- C++ inference reference files
-- archived historical scripts for comparison and traceability
-
-## Repository Structure
+## Repository Layout
 
 ```text
 .
